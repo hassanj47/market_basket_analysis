@@ -94,12 +94,12 @@ with col1:
     #slider min_support
     N=6
     sup_opts = np.sort([(0.1/(10**i)) for i in range(N)])
-    minsup = st.select_slider('Select min_support',options=sup_opts, value=10**-4)
+    minsup = st.select_slider('min_support',options=sup_opts, value=10**-4)
 
 with col2:
     #slider max_len
     len_opts = np.arange(1,11)
-    maxlen = st.select_slider('Select max_len',options=len_opts, value=3)
+    maxlen = st.select_slider('max_len',options=len_opts, value=3)
 
 #fpmax call
 @st.cache
@@ -138,7 +138,7 @@ with col2:
     elif option == 'confidence':
         thresh = st.select_slider('min_thresh',options=sup_opts, value=np.min(sup_opts))
 
-rules = association_rules(frequent_itemsets, metric=option, min_threshold=thresh)
+rules = association_rules(frequent_itemsets, metric=option.lower(), min_threshold=thresh)
 
 rules['antecedents'] = rules['antecedents'].apply(lambda a: ','.join(list(a)))
 rules['consequents'] = rules['consequents'].apply(lambda a: ','.join(list(a)))
@@ -161,13 +161,13 @@ else:
     col1, col2, col3 = st.columns(3)
     with col1:
         sup_opts = np.sort(rules['support'].round(5).unique())
-        sup = st.select_slider('Support',options=sup_opts, value=sup_opts[0])
+        sup = st.select_slider('support',options=sup_opts, value=sup_opts[0])
     with col2:
         lift_opts = np.sort(rules['lift'].round(2).unique())
-        lft = st.select_slider('Lift',options=lift_opts, value=lift_opts[0])
+        lft = st.select_slider('lift',options=lift_opts, value=lift_opts[0])
     with col3:
         conf_opts = np.sort(rules['confidence'].round(2).unique())
-        cnf = st.select_slider('Confidence',options=conf_opts, value=conf_opts[0])
+        cnf = st.select_slider('confidence',options=conf_opts, value=conf_opts[0])
 
    
     ant_rules = np.array(rules['antecedents'].to_list()).flatten().tolist()
@@ -184,10 +184,10 @@ else:
     #     con_rules,None)
     
     opts_ant = st.multiselect(
-        'choose antecedents',
+        'Choose antecedents',
         ant_rules,None)
     opts_con = st.multiselect(
-        'choose consequents',
+        'Choose consequents',
         con_rules,None)
 
     # Filtering on filters
@@ -239,7 +239,7 @@ else:
     #slider CONF_THRESH
     N=6
     conf_opts = np.sort([(CONF_THRESH*i) for i in range(1,N)])
-    conf_sel = st.select_slider('Confidence Difference Threshold',options=conf_opts, value=conf_opts.min())
+    conf_sel = st.select_slider('Confidence difference threshold',options=conf_opts, value=conf_opts.min())
 
     #rounding off floats before grouping
     rules['lift'] = round(rules['lift'],5)
