@@ -249,12 +249,6 @@ else:
         else:
 
             CONF_THRESH = 0.05
-
-            #rounding off floats before grouping
-            rules['lift'] = round(rules['lift'],5)
-            # promotional bundles logic 
-            promos_filt = rules.groupby('lift') \
-                .filter(lambda x: np.abs( x['confidence'].iloc[0] - x['confidence'].iloc[1] ) < conf_sel) \
             
             st.markdown('1. Promotional Buckets from relations')
             #slider CONF_THRESH
