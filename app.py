@@ -205,67 +205,88 @@ else:
     with col2:
         st.metric(label="Association Rules after pruning", value=rules_manual.shape[0], delta=\
             str(format(((rules_manual.shape[0]/rules.shape[0])-1)*100,'.2f'))+'%')
+    
+    if rules_manual.shape[0] == 0:
+        col1, col2 = st.columns(2)
+        with col1:
+            st.write('##### There are no rules after pruning :( ')
+        with col2:
+            st.write('##### Please, try adjusting the filters again.')
+    else:
+        #Visualizations
+        st.subheader('Visualize rules')
+        #Visualizations: Heatmap
+        st.markdown('Heatmap of relations')
+        rules_sorted = rules_manual.sort_values(by='lift', ascending=False)
+        rules_t20 = rules_sorted.nlargest(20,'lift')
+        lift_table = rules_t20.pivot(index='antecedents', columns='consequents', values='lift')
 
+        fig, ax = plt.subplots(figsize=(10,8))
+        sns.heatmap(lift_table, annot=True, ax=ax)
+        st.write(fig)
 
+        #Visualization: Parallel coordinates
+        st.markdown('Parallel co-ordinates plot')
+        rules_t20['rule'] = rules_t20.index
+        coords = rules_t20[['antecedents','consequents','rule']]
+        fig, ax = plt.subplots(figsize=(10,12))
+        parallel_coordinates(coords, 'rule', colormap = 'ocean', ax=ax)
+        st.write(fig)
 
-    #Visualizations
-    st.subheader('Visualize rules')
-    #Visualizations: Heatmap
-    st.markdown('Heatmap of relations')
-    rules_sorted = rules_manual.sort_values(by='lift', ascending=False)
-    rules_t20 = rules_sorted.nlargest(20,'lift')
-    lift_table = rules_t20.pivot(index='antecedents', columns='consequents', values='lift')
+        #Market basket use-cases
+        st.subheader('Custom Market Basket use-cases')
 
-    fig, ax = plt.subplots(figsize=(10,8))
-    sns.heatmap(lift_table, annot=True, ax=ax)
-    st.write(fig)
+        #Promotional buckets
+        rules = rules_manual
+        
+        if ~(rules.groupby('lift').size() > 1).any():
+            col1, col2 = st.columns(2)
+            with col1:
+                st.write('##### Not enough rules after pruning for promotional buckets or cross-sells :( ')
+            with col2:
+                st.write('##### Please, try adjusting the filters again.')
+        
+        else:
 
-    #Visualization: Parallel coordinates
-    st.markdown('Parallel co-ordinates plot')
-    rules_t20['rule'] = rules_t20.index
-    coords = rules_t20[['antecedents','consequents','rule']]
-    fig, ax = plt.subplots(figsize=(10,12))
-    parallel_coordinates(coords, 'rule', colormap = 'ocean', ax=ax)
-    st.write(fig)
+            CONF_THRESH = 0.05
 
-    #Market basket use-cases
-    st.subheader('Custom Market Basket use-cases')
+            #rounding off floats before grouping
+            rules['lift'] = round(rules['lift'],5)
+            # promotional bundles logic 
+            promos_filt = rules.groupby('lift') \
+                .filter(lambda x: np.abs( x['confidence'].iloc[0] - x['confidence'].iloc[1] ) < conf_sel) \
+            
+            st.markdown('1. Promotional Buckets from relations')
+            #slider CONF_THRESH
+            N=6
+            conf_opts = np.sort([(CONF_THRESH*i) for i in range(1,N)])
+            conf_sel = st.select_slider('Confidence difference threshold',options=conf_opts, value=conf_opts.min())
 
-    #Promotional buckets
-    rules = rules_manual
-    st.markdown('1. Promotional Buckets from relations')
-    CONF_THRESH = 0.05
+            #rounding off floats before grouping
+            rules['lift'] = round(rules['lift'],5)
+            # promotional bundles logic 
+            promos_filt = rules.groupby('lift') \
+                .filter(lambda x: np.abs( x['confidence'].iloc[0] - x['confidence'].iloc[1] ) < conf_sel) \
 
-    #slider CONF_THRESH
-    N=6
-    conf_opts = np.sort([(CONF_THRESH*i) for i in range(1,N)])
-    conf_sel = st.select_slider('Confidence difference threshold',options=conf_opts, value=conf_opts.min())
+            promos = promos_filt.groupby('lift') \
+                .apply(lambda x: ','.join(list(x['antecedents'])))\
+                .to_frame('promo_buckets')\
+                .reset_index()
 
-    #rounding off floats before grouping
-    rules['lift'] = round(rules['lift'],5)
-    # promotional bundles logic 
-    promos_filt = rules.groupby('lift') \
-        .filter(lambda x: np.abs( x['confidence'].iloc[0] - x['confidence'].iloc[1] ) < conf_sel) \
+            st.write(promos)
+        
+            # cross sell logic
+            st.markdown('2. Cross-sell candidate products')
+            cross_sells_cand = rules[~rules.antecedents.isin(promos_filt.antecedents)]
+            cross_sells = cross_sells_cand.groupby('lift')\
+                        .apply(lambda x: x[x['confidence'] ==  x['confidence'].max()])\
+                        .reset_index(drop=True)
 
-    promos = promos_filt.groupby('lift') \
-        .apply(lambda x: ','.join(list(x['antecedents'])))\
-        .to_frame('promo_buckets')\
-        .reset_index()
+            st.dataframe(cross_sells[['lift','antecedents','consequents']])
 
-    st.write(promos)
-   
-    # cross sell logic
-    st.markdown('2. Cross-sell candidate products')
-    cross_sells_cand = rules[~rules.antecedents.isin(promos_filt.antecedents)]
-    cross_sells = cross_sells_cand.groupby('lift')\
-                .apply(lambda x: x[x['confidence'] ==  x['confidence'].max()])\
-                .reset_index(drop=True)
+            col1, col2 = st.columns(2)
 
-    st.dataframe(cross_sells[['lift','antecedents','consequents']])
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-        st.metric(label='Promotional buckets #', value=promos.shape[0], delta=None)
-    with col2:
-        st.metric(label='Cross-sell candidates #', value=cross_sells.shape[0], delta=None)
+            with col1:
+                st.metric(label='Promotional buckets #', value=promos.shape[0], delta=None)
+            with col2:
+                st.metric(label='Cross-sell candidates #', value=cross_sells.shape[0], delta=None)
