@@ -15,7 +15,7 @@ pd.set_option('display.max_colwidth', None)
 
 
 #paths
-path = 'ecomm-open-cdp/items_ohe_2019_oct.csv'
+path = 'ecomm-open-cdp/items_ohe_2019_oct.parquet'
 
 #sidebar
 st.sidebar.markdown('### Welcome to the Market Basket analysis Demo')
@@ -31,7 +31,7 @@ st.markdown('A snapshot of the transaction data is shown below:')
 #read csv util
 @st.cache
 def read_csv(path):
-    return pd.read_csv(path)
+    return pd.read_parquet(path)
 
 items_df = read_csv(path).reset_index(drop=True)
 items_df = items_df.drop(['Unnamed: 0'],axis=1)
