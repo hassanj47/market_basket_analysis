@@ -20,7 +20,7 @@ path = 'ecomm-open-cdp/items_ohe_2019_oct.parquet'
 #sidebar
 st.sidebar.markdown('### Welcome to the Market Basket analysis Demo')
 st.sidebar.markdown('Market Basket analysis is used to identify association rules between products.')
-st.sidebar.markdown('Here, we use the apriori and FPgrowth algorithm to identify good rules and prune them further based on useful metrics.')
+st.sidebar.markdown('Here, we use the FPgrowth algorithm to identify good rules and prune them further based on useful metrics.')
 st.sidebar.markdown('Created by Hassan Javed: [Linkedin](https://www.linkedin.com/in/hassan-javed-610/)')
 #Title
 st.title('Ecommerce Data Market Basket Analysis')
